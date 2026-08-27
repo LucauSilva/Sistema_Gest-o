@@ -1,0 +1,46 @@
+name: Construir ENPCB.exe (Windows)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - "enpcb_sistema.py"
+      - ".github/workflows/build-windows.yml"
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Obter o codigo
+        uses: actions/checkout@v4
+
+      - name: Preparar o Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar o PyInstaller
+        run: python -m pip install --upgrade pip pyinstaller
+
+      - name: Construir o ENPCB.exe
+        run: python -m PyInstaller --onefile --windowed --name ENPCB enpcb_sistema.py
+
+      - name: Disponibilizar o exe como ficheiro descarregavel
+        uses: actions/upload-artifact@v4
+        with:
+          name: ENPCB-Windows
+          path: dist/ENPCB.exe
+          retention-days: 90
+
+      - name: Publicar como Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/ENPCB.exe
+          generate_release_notes: true
